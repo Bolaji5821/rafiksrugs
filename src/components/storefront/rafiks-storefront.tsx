@@ -164,7 +164,7 @@ export function RafiksStorefront() {
 
       <main id="main">
         <section className="rr-hero" id="home">
-          <LiquidReveal before={PRODUCTS[0].image} after="https://rafiksrugs.com/cdn/shop/files/886cb141-260a-4066-8183-69b775c7d0d7_jpg.webp?v=1784073571&width=1100" />
+          <LiquidReveal before={PRODUCTS[0].image} after={PRODUCTS[2].image} />
           <div className="rr-hero-vignette" /><div className="rr-hero-watermark">RAFIK&apos;S</div>
           <div className="rr-hero-copy"><p className="rr-kicker rr-hero-enter rr-delay-1">Made for homes with soul</p><h1><span><i>Browse our</i></span><span><i>latest products</i></span></h1><button className="rr-pill rr-light rr-hero-enter rr-delay-4" onClick={() => lenisRef.current?.scrollTo("#collection", { duration: 1.1 })}>Shop all <ArrowUpRight /></button></div>
           <div className="rr-feature-card rr-hero-enter rr-delay-3"><img src={PRODUCTS[featureIndex].image} alt={PRODUCTS[featureIndex].name} /><div><span>{PRODUCTS[featureIndex].name}<small>{money(PRODUCTS[featureIndex].price)}</small></span><b>{String(featureIndex + 1).padStart(2, "0")} / 08</b></div><div className="rr-feature-dots">{PRODUCTS.map((product, index) => <button key={product.id} className={index === featureIndex ? "active" : ""} onClick={() => setFeatureIndex(index)} aria-label={`Show ${product.name}`} />)}</div></div>
