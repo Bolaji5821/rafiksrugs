@@ -4,6 +4,8 @@
 import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowUp, ArrowUpRight, Check, ChevronDown, Menu, Minus, Plus, Search, ShoppingBag, X } from "lucide-react";
 import Lenis from "lenis";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Link from "next/link";
 import NextImage from "next/image";
 import { money, PRODUCTS, type Product } from "@/lib/catalog";
@@ -38,6 +40,8 @@ export function RafiksStorefront() {
   const [requestSent, setRequestSent] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const categorySectionRef = useRef<HTMLElement>(null);
+  const categoryStickyRef = useRef<HTMLDivElement>(null);
+  const categoryViewportRef = useRef<HTMLDivElement>(null);
   const categoryTrackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -60,8 +64,13 @@ export function RafiksStorefront() {
 
   useEffect(() => {
     const lenis = new Lenis({ smoothWheel: true, anchors: true }); lenisRef.current = lenis;
-    let frame = 0; const raf = (time: number) => { lenis.raf(time); frame = requestAnimationFrame(raf); }; frame = requestAnimationFrame(raf);
-    return () => { cancelAnimationFrame(frame); lenis.destroy(); lenisRef.current = null; };
+    gsap.registerPlugin(ScrollTrigger);
+    const updateScrollTrigger = () => ScrollTrigger.update();
+    const raf = (time: number) => lenis.raf(time * 1000);
+    lenis.on("scroll", updateScrollTrigger);
+    gsap.ticker.add(raf);
+    gsap.ticker.lagSmoothing(0);
+    return () => { lenis.off("scroll", updateScrollTrigger); gsap.ticker.remove(raf); lenis.destroy(); lenisRef.current = null; };
   }, []);
 
   useEffect(() => {
@@ -98,28 +107,31 @@ export function RafiksStorefront() {
 
   useEffect(() => {
     const section = categorySectionRef.current;
+    const sticky = categoryStickyRef.current;
+    const viewport = categoryViewportRef.current;
     const track = categoryTrackRef.current;
-    if (!section || !track) return;
-    let frame = 0;
-    const update = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        if (window.innerWidth > 640) {
-          section.style.removeProperty("height");
-          track.scrollLeft = 0;
-          return;
-        }
-        const distance = Math.max(0, track.scrollWidth - track.clientWidth);
-        section.style.height = `${window.innerHeight + distance}px`;
-        const top = section.getBoundingClientRect().top;
-        const progress = distance ? Math.max(0, Math.min(1, -top / distance)) : 0;
-        track.scrollLeft = progress * distance;
+    if (!section || !sticky || !viewport || !track) return;
+    gsap.registerPlugin(ScrollTrigger);
+    const media = gsap.matchMedia();
+    media.add("(max-width: 640px) and (prefers-reduced-motion: no-preference)", () => {
+      const distance = () => Math.max(0, track.scrollWidth - viewport.clientWidth);
+      const tween = gsap.to(track, {
+        x: () => -distance(),
+        ease: "none",
+        scrollTrigger: {
+          trigger: section,
+          start: "bottom bottom",
+          end: () => `+=${distance()}`,
+          pin: sticky,
+          pinSpacing: true,
+          scrub: true,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+        },
       });
-    };
-    update();
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
-    return () => { cancelAnimationFrame(frame); window.removeEventListener("scroll", update); window.removeEventListener("resize", update); section.style.removeProperty("height"); };
+      return () => { tween.scrollTrigger?.kill(); tween.kill(); gsap.set(track, { clearProps: "transform" }); };
+    });
+    return () => media.revert();
   }, []);
 
   useEffect(() => {
@@ -199,7 +211,7 @@ export function RafiksStorefront() {
           <div className="rr-feature-card rr-hero-enter rr-delay-3"><img src={PRODUCTS[featureIndex].image} alt={PRODUCTS[featureIndex].name} /><div><span>{PRODUCTS[featureIndex].name}<small>{money(PRODUCTS[featureIndex].price)}</small></span><b>{String(featureIndex + 1).padStart(2, "0")} / 08</b></div><div className="rr-feature-dots">{PRODUCTS.map((product, index) => <button key={product.id} className={index === featureIndex ? "active" : ""} onClick={() => setFeatureIndex(index)} aria-label={`Show ${product.name}`} />)}</div></div>
         </section>
 
-        <section ref={categorySectionRef} className="rr-section rr-categories" id="categories"><div className="rr-category-sticky"><Reveal><SectionHeading kicker="Find your foundation" title="Shop by category" /></Reveal><div ref={categoryTrackRef} className="rr-category-grid">{categories.map((category, index) => <Reveal key={category.name} delay={index * 120}><button className="rr-category" onClick={() => shopCategory(category.name)}><img src={category.image} alt={`${category.name} collection`} /><span><strong>{category.name}</strong><small>{category.count} pieces <ArrowUpRight /></small></span></button></Reveal>)}</div><p className="rr-category-progress" aria-hidden="true">Scroll to explore <span>→</span></p></div></section>
+        <section ref={categorySectionRef} className="rr-section rr-categories" id="categories"><div ref={categoryStickyRef} className="rr-category-sticky"><Reveal><SectionHeading kicker="Find your foundation" title="Shop by category" /></Reveal><div ref={categoryViewportRef} className="rr-category-viewport"><div ref={categoryTrackRef} className="rr-category-grid">{categories.map((category, index) => <Reveal key={category.name} delay={index * 120}><button className="rr-category" onClick={() => shopCategory(category.name)}><img src={category.image} alt={`${category.name} collection`} /><span><strong>{category.name}</strong><small>{category.count} pieces <ArrowUpRight /></small></span></button></Reveal>)}</div></div><p className="rr-category-progress" aria-hidden="true">Scroll to explore <span>→</span></p></div></section>
 
         <section className="rr-create-band" aria-label="Why shop Rafik's Rugs">{["Distinctive rugs", "Carefully sourced", "Fairly priced", "Made for living"].map((promise, index) => <Reveal key={promise} delay={index * 120}><span className={`rr-create-${index + 1}`}>{promise}</span></Reveal>)}</section>
 
@@ -252,7 +264,6 @@ function Reveal({ children, delay = 0, className = "" }: { children: ReactNode; 
 function LiquidReveal({ before, after }: { before: string; after: string }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [mobileAfter, setMobileAfter] = useState(false);
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -294,7 +305,7 @@ function LiquidReveal({ before, after }: { before: string; after: string }) {
     return () => { resizeObserver.disconnect(); window.removeEventListener("pointermove", move); wrap.removeEventListener("pointerdown", down); wrap.removeEventListener("pointerup", up); wrap.removeEventListener("pointercancel", up); cancelAnimationFrame(animation); };
   }, [after]);
 
-  return <div className={`rr-liquid ${mobileAfter ? "show-after" : ""}`} ref={wrapRef}><img src={before} alt="A room before styling" /><img className="rr-liquid-after" src={after} alt="The room styled with a rug" /><canvas ref={canvasRef} aria-hidden="true" /><span className="rr-liquid-hint">Drag to reveal</span><button className="rr-liquid-toggle" type="button" onClick={(event) => { event.stopPropagation(); setMobileAfter((value) => !value); }}>{mobileAfter ? "Show before" : "Show after"}</button></div>;
+  return <div className="rr-liquid" ref={wrapRef}><img src={before} alt="A room before styling" /><canvas ref={canvasRef} aria-label="Touch and move across the hero to reveal a second styled room" /></div>;
 }
 
 function Stats() {
