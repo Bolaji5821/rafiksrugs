@@ -120,15 +120,17 @@ export function RafiksStorefront() {
         ease: "none",
         scrollTrigger: {
           trigger: section,
-          start: "bottom bottom",
+          start: "top top",
           end: () => `+=${distance()}`,
-          pin: sticky,
+          pin: section,
           pinSpacing: true,
+          pinType: "fixed",
           scrub: true,
           anticipatePin: 1,
           invalidateOnRefresh: true,
         },
       });
+      requestAnimationFrame(() => ScrollTrigger.refresh());
       return () => { tween.scrollTrigger?.kill(); tween.kill(); gsap.set(track, { clearProps: "transform" }); };
     });
     return () => media.revert();
