@@ -37,6 +37,8 @@ export function RafiksStorefront() {
   const [checkoutStep, setCheckoutStep] = useState(0);
   const [requestSent, setRequestSent] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const categorySectionRef = useRef<HTMLElement>(null);
+  const categoryTrackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -92,6 +94,32 @@ export function RafiksStorefront() {
     update();
     window.addEventListener("scroll", update, { passive: true });
     return () => window.removeEventListener("scroll", update);
+  }, []);
+
+  useEffect(() => {
+    const section = categorySectionRef.current;
+    const track = categoryTrackRef.current;
+    if (!section || !track) return;
+    let frame = 0;
+    const update = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        if (window.innerWidth > 640) {
+          section.style.removeProperty("height");
+          track.scrollLeft = 0;
+          return;
+        }
+        const distance = Math.max(0, track.scrollWidth - track.clientWidth);
+        section.style.height = `${window.innerHeight + distance}px`;
+        const top = section.getBoundingClientRect().top;
+        const progress = distance ? Math.max(0, Math.min(1, -top / distance)) : 0;
+        track.scrollLeft = progress * distance;
+      });
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => { cancelAnimationFrame(frame); window.removeEventListener("scroll", update); window.removeEventListener("resize", update); section.style.removeProperty("height"); };
   }, []);
 
   useEffect(() => {
@@ -159,7 +187,7 @@ export function RafiksStorefront() {
         <nav className="rr-nav" aria-label="Primary navigation">
           <button onClick={() => setMenuOpen(true)}><Menu size={18} /><span>Menu</span></button>
           <a className="rr-logo" href="#home" aria-label="Rafik's Rugs home"><span><NextImage src="/RafiksRugs.png" alt="" width={300} height={300} loading="eager" /></span></a>
-          <div className="rr-nav-actions"><button onClick={() => setSearchOpen(true)}><Search size={18} /><span>Search</span></button><button onClick={() => setCartOpen(true)}><ShoppingBag size={18} /><span>Cart</span><i>{itemCount}</i></button></div>
+          <div className="rr-nav-actions"><button onClick={() => setSearchOpen(true)}><Search size={18} /><span>Search</span></button><button className="rr-cart-trigger" onClick={() => setCartOpen(true)} aria-label={`Open cart with ${itemCount} ${itemCount === 1 ? "item" : "items"}`}><ShoppingBag size={20} /><i>{itemCount}</i></button></div>
         </nav>
       </header>
 
@@ -171,7 +199,7 @@ export function RafiksStorefront() {
           <div className="rr-feature-card rr-hero-enter rr-delay-3"><img src={PRODUCTS[featureIndex].image} alt={PRODUCTS[featureIndex].name} /><div><span>{PRODUCTS[featureIndex].name}<small>{money(PRODUCTS[featureIndex].price)}</small></span><b>{String(featureIndex + 1).padStart(2, "0")} / 08</b></div><div className="rr-feature-dots">{PRODUCTS.map((product, index) => <button key={product.id} className={index === featureIndex ? "active" : ""} onClick={() => setFeatureIndex(index)} aria-label={`Show ${product.name}`} />)}</div></div>
         </section>
 
-        <section className="rr-section rr-categories" id="categories"><Reveal><SectionHeading kicker="Find your foundation" title="Shop by category" /></Reveal><div className="rr-category-grid">{categories.map((category, index) => <Reveal key={category.name} delay={index * 120}><button className="rr-category" onClick={() => shopCategory(category.name)}><img src={category.image} alt={`${category.name} collection`} /><span><strong>{category.name}</strong><small>{category.count} pieces <ArrowUpRight /></small></span></button></Reveal>)}</div></section>
+        <section ref={categorySectionRef} className="rr-section rr-categories" id="categories"><div className="rr-category-sticky"><Reveal><SectionHeading kicker="Find your foundation" title="Shop by category" /></Reveal><div ref={categoryTrackRef} className="rr-category-grid">{categories.map((category, index) => <Reveal key={category.name} delay={index * 120}><button className="rr-category" onClick={() => shopCategory(category.name)}><img src={category.image} alt={`${category.name} collection`} /><span><strong>{category.name}</strong><small>{category.count} pieces <ArrowUpRight /></small></span></button></Reveal>)}</div><p className="rr-category-progress" aria-hidden="true">Scroll to explore <span>→</span></p></div></section>
 
         <section className="rr-create-band" aria-label="Why shop Rafik's Rugs">{["Distinctive rugs", "Carefully sourced", "Fairly priced", "Made for living"].map((promise, index) => <Reveal key={promise} delay={index * 120}><span className={`rr-create-${index + 1}`}>{promise}</span></Reveal>)}</section>
 
@@ -224,6 +252,7 @@ function Reveal({ children, delay = 0, className = "" }: { children: ReactNode; 
 function LiquidReveal({ before, after }: { before: string; after: string }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [mobileAfter, setMobileAfter] = useState(false);
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -232,13 +261,14 @@ function LiquidReveal({ before, after }: { before: string; after: string }) {
     const context = canvas.getContext("2d"), cover = document.createElement("canvas"), coverContext = cover.getContext("2d"), brush = document.createElement("canvas"), brushContext = brush.getContext("2d");
     if (!context || !coverContext || !brushContext) return;
     const image = new Image(); image.crossOrigin = "anonymous"; image.src = after;
-    let dpr = Math.min(devicePixelRatio, 2), radius = 143 * dpr, diameter = Math.ceil(radius * 2), idle = 121, animation = 0, last: { x: number; y: number } | null = null;
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
+    let dpr = Math.min(devicePixelRatio, 2), radius = 143 * dpr, diameter = Math.ceil(radius * 2), idle = 121, animation = 0, touching = false, last: { x: number; y: number } | null = null;
     let points: { x: number; y: number }[] = [];
     const resize = () => {
-      const rect = wrap.getBoundingClientRect(); dpr = Math.min(devicePixelRatio, 2); radius = 143 * dpr; diameter = Math.ceil(radius * 2);
+      const rect = wrap.getBoundingClientRect(); dpr = Math.min(devicePixelRatio, 2); radius = (coarse ? Math.min(rect.width * .3, 132) : 143) * dpr; diameter = Math.ceil(radius * 2);
       canvas.width = cover.width = Math.round(rect.width * dpr); canvas.height = cover.height = Math.round(rect.height * dpr); canvas.style.width = `${rect.width}px`; canvas.style.height = `${rect.height}px`; brush.width = brush.height = diameter;
       coverContext.clearRect(0, 0, cover.width, cover.height);
-      if (image.complete && image.naturalWidth) { const scale = Math.max(cover.width / image.naturalWidth, cover.height / image.naturalHeight), width = image.naturalWidth * scale, height = image.naturalHeight * scale; coverContext.drawImage(image, (cover.width - width) / 2, (cover.height - height) / 2, width, height); }
+      if (image.complete && image.naturalWidth) { const scale = Math.max(cover.width / image.naturalWidth, cover.height / image.naturalHeight), width = image.naturalWidth * scale, height = image.naturalHeight * scale; coverContext.drawImage(image, (cover.width - width) / 2, (cover.height - height) / 2, width, height); if (coarse) points.push({ x: canvas.width * .52, y: canvas.height * .62 }); }
     };
     image.onload = resize; const resizeObserver = new ResizeObserver(resize); resizeObserver.observe(wrap); resize();
     const stamp = ({ x, y }: { x: number; y: number }) => {
@@ -257,11 +287,14 @@ function LiquidReveal({ before, after }: { before: string; after: string }) {
       if (idle <= 120) { context.globalCompositeOperation = "destination-out"; context.fillStyle = `rgba(0,0,0,${drawing ? .016 : Math.min(.016 + idle * .004, .5)})`; context.fillRect(0, 0, canvas.width, canvas.height); if (drawing) { points.forEach(stamp); points = []; } else if (idle === 120) context.clearRect(0, 0, canvas.width, canvas.height); }
       animation = requestAnimationFrame(tick);
     };
-    window.addEventListener("pointermove", pointer, { passive: true }); animation = requestAnimationFrame(tick);
-    return () => { resizeObserver.disconnect(); window.removeEventListener("pointermove", pointer); cancelAnimationFrame(animation); };
+    const down = (event: PointerEvent) => { if (!coarse) return; touching = true; last = null; wrap.setPointerCapture?.(event.pointerId); pointer(event); wrap.classList.add("is-touching"); };
+    const move = (event: PointerEvent) => { if (!coarse || touching) pointer(event); };
+    const up = (event: PointerEvent) => { if (!coarse) return; touching = false; last = null; wrap.releasePointerCapture?.(event.pointerId); wrap.classList.remove("is-touching"); };
+    window.addEventListener("pointermove", move, { passive: true }); wrap.addEventListener("pointerdown", down); wrap.addEventListener("pointerup", up); wrap.addEventListener("pointercancel", up); animation = requestAnimationFrame(tick);
+    return () => { resizeObserver.disconnect(); window.removeEventListener("pointermove", move); wrap.removeEventListener("pointerdown", down); wrap.removeEventListener("pointerup", up); wrap.removeEventListener("pointercancel", up); cancelAnimationFrame(animation); };
   }, [after]);
 
-  return <div className="rr-liquid" ref={wrapRef}><img src={before} alt="A styled room featuring a handwoven rug" /><canvas ref={canvasRef} aria-hidden="true" /></div>;
+  return <div className={`rr-liquid ${mobileAfter ? "show-after" : ""}`} ref={wrapRef}><img src={before} alt="A room before styling" /><img className="rr-liquid-after" src={after} alt="The room styled with a rug" /><canvas ref={canvasRef} aria-hidden="true" /><span className="rr-liquid-hint">Drag to reveal</span><button className="rr-liquid-toggle" type="button" onClick={(event) => { event.stopPropagation(); setMobileAfter((value) => !value); }}>{mobileAfter ? "Show before" : "Show after"}</button></div>;
 }
 
 function Stats() {
