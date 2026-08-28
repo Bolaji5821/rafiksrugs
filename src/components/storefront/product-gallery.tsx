@@ -69,6 +69,7 @@ export function ProductGallery({ images, productName, maxZoom = 4, desktopHoverZ
 
   return <>
     <div className={`store-gallery ${compact ? "store-gallery-compact" : ""}`}>
+      <p className="store-gallery-hint"><ZoomIn /> Tap image to zoom</p>
       {images.map((image, index) => <button key={image} className="store-gallery-image" onClick={() => show(index)} aria-label={`Zoom ${productName}${index ? ` detail ${index + 1}` : ""}`} style={{ "--hover-zoom": desktopHoverZoom } as React.CSSProperties} onMouseMove={(event) => { const box = event.currentTarget.getBoundingClientRect(); event.currentTarget.style.setProperty("--zoom-x", `${(event.clientX - box.left) / box.width * 100}%`); event.currentTarget.style.setProperty("--zoom-y", `${(event.clientY - box.top) / box.height * 100}%`); }}><img src={image} alt={index === 0 ? productName : `${productName} detail ${index + 1}`} /><span><ZoomIn /> Tap or click to zoom</span></button>)}
     </div>
     {active !== null && <div className="store-lightbox" role="dialog" aria-modal="true" aria-label={`${productName} image viewer`}>
