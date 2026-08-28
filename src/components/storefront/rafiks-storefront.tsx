@@ -39,6 +39,7 @@ export function RafiksStorefront() {
   const [checkoutStep, setCheckoutStep] = useState(0);
   const [requestSent, setRequestSent] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [headerScrolled, setHeaderScrolled] = useState(false);
   const categorySectionRef = useRef<HTMLElement>(null);
   const categoryStickyRef = useRef<HTMLDivElement>(null);
   const categoryViewportRef = useRef<HTMLDivElement>(null);
@@ -99,7 +100,7 @@ export function RafiksStorefront() {
   }, []);
 
   useEffect(() => {
-    const update = () => setShowScrollTop(window.scrollY > window.innerHeight * 0.75);
+    const update = () => { setShowScrollTop(window.scrollY > window.innerHeight * 0.75); setHeaderScrolled(window.scrollY > 24); };
     update();
     window.addEventListener("scroll", update, { passive: true });
     return () => window.removeEventListener("scroll", update);
@@ -196,7 +197,7 @@ export function RafiksStorefront() {
     <div className={`rr-site ${loaded ? "rr-ready" : ""}`}>
       <a className="rr-skip" href="#main">Skip to content</a>
       <div className={`rr-loader ${loaded ? "is-loaded" : ""}`}><div className="rr-loader-center"><span className="rr-loader-logo"><NextImage src="/RafiksRugs.png" alt="Rafik's Rugs" width={300} height={300} loading="eager" /></span><p>Handwoven character, sourced with quiet care.</p></div><div className="rr-loader-progress"><i><span style={{ width: `${progress}%` }} /></i><div><span>Loading</span><b>{String(progress).padStart(3, "0")}</b></div></div></div>
-      <header className="rr-header rr-ready-reveal">
+      <header className={`rr-header rr-ready-reveal ${headerScrolled ? "is-scrolled" : ""}`}>
         <div className="rr-announcement">Free shipping on orders over $100 · Easy returns within 30 days</div>
         <nav className="rr-nav" aria-label="Primary navigation">
           <button onClick={() => setMenuOpen(true)}><Menu size={18} /><span>Menu</span></button>
@@ -213,7 +214,7 @@ export function RafiksStorefront() {
           <div className="rr-feature-card rr-hero-enter rr-delay-3"><img src={PRODUCTS[featureIndex].image} alt={PRODUCTS[featureIndex].name} /><div><span>{PRODUCTS[featureIndex].name}<small>{money(PRODUCTS[featureIndex].price)}</small></span><b>{String(featureIndex + 1).padStart(2, "0")} / 08</b></div><div className="rr-feature-dots">{PRODUCTS.map((product, index) => <button key={product.id} className={index === featureIndex ? "active" : ""} onClick={() => setFeatureIndex(index)} aria-label={`Show ${product.name}`} />)}</div></div>
         </section>
 
-        <section ref={categorySectionRef} className="rr-section rr-categories" id="categories"><div ref={categoryStickyRef} className="rr-category-sticky"><Reveal><SectionHeading kicker="Find your foundation" title="Shop by category" /></Reveal><div ref={categoryViewportRef} className="rr-category-viewport"><div ref={categoryTrackRef} className="rr-category-grid">{categories.map((category, index) => <Reveal key={category.name} delay={index * 120}><button className="rr-category" onClick={() => shopCategory(category.name)}><img src={category.image} alt={`${category.name} collection`} /><span><strong>{category.name}</strong><small>{category.count} pieces <ArrowUpRight /></small></span></button></Reveal>)}</div></div><p className="rr-category-progress" aria-hidden="true">Scroll to explore <span>→</span></p></div></section>
+        <section ref={categorySectionRef} className="rr-section rr-categories" id="categories"><div ref={categoryStickyRef} className="rr-category-sticky"><Reveal><SectionHeading kicker="Find your foundation" title="Shop by category" /></Reveal><div ref={categoryViewportRef} className="rr-category-viewport"><div ref={categoryTrackRef} className="rr-category-grid">{categories.map((category, index) => <Reveal key={category.name} delay={index * 120}><button className="rr-category" onClick={() => shopCategory(category.name)}><img src={category.image} alt={`${category.name} collection`} /><span><strong>{category.name}</strong><small>{category.count} pieces <ArrowUpRight /></small></span></button></Reveal>)}</div></div></div></section>
 
         <section className="rr-create-band" aria-label="Why shop Rafik's Rugs">{["Distinctive rugs", "Carefully sourced", "Fairly priced", "Made for living"].map((promise, index) => <Reveal key={promise} delay={index * 120}><span className={`rr-create-${index + 1}`}>{promise}</span></Reveal>)}</section>
 

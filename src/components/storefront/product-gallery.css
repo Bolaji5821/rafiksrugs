@@ -2,3 +2,4 @@
 
 @media(max-width:640px){.store-gallery-hint{top:1.25rem;left:1.25rem}}
 .store-gallery-hint{display:none}@media(max-width:640px){.store-gallery-hint{display:flex}}
+.store-gallery-hint{display:none!important}
