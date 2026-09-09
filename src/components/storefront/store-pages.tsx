@@ -2,14 +2,14 @@
 
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
-import Image from "next/image";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowUp, ArrowUpRight, Check, Minus, Plus, Search, ShoppingBag } from "lucide-react";
+import { ArrowLeft, ArrowUp, ArrowUpRight, Check, Minus, Plus, Search } from "lucide-react";
 import { money, PRODUCTS, type Product } from "@/lib/catalog";
+import { CustomSelect } from "@/components/storefront/custom-select";
 import "./store-pages.css";
 
 export function StoreChrome({ children }: { children: React.ReactNode }) {
-  return <div className="store-page"><header className="store-header"><Link className="store-brand-logo" href="/" aria-label="Rafik's Rugs home"><Image src="/RafiksRugs.png" alt="" width={300} height={300} priority /></Link><nav><Link href="/collections">Shop</Link><Link href="/search"><Search /> Search</Link><Link href="/#request">Request a rug</Link><Link href="/"><ShoppingBag /> Cart</Link></nav></header>{children}<footer className="store-footer"><strong className="store-footer-logo"><Image src="/RafiksRugs.png" alt="Rafik's Rugs" width={900} height={900} /></strong><div><span>Handwoven character for rooms with soul.</span><nav><Link href="/collections">Shop all</Link><Link href="/#request">Request a rug</Link><Link href="/search">Search</Link><Link href="/shipping-returns">Shipping &amp; returns</Link></nav></div><small>© 2026 Rafik&apos;s Rugs · Privacy · Terms</small></footer><RouteScrollTop /></div>;
+  return <div className="store-page">{children}<RouteScrollTop /></div>;
 }
 
 function RouteScrollTop() {
@@ -21,7 +21,7 @@ function RouteScrollTop() {
 export function CollectionView({ products = PRODUCTS, title = "All rugs", description = "Explore every texture, tone, and shape in the collection." }: { products?: Product[]; title?: string; description?: string }) {
   const [sort, setSort] = useState("featured");
   const sorted = useMemo(() => [...products].sort((a, b) => sort === "low" ? a.price - b.price : sort === "high" ? b.price - a.price : sort === "name" ? a.name.localeCompare(b.name) : a.id - b.id), [products, sort]);
-  return <StoreChrome><main><section className="store-hero"><Link href="/"><ArrowLeft /> Home</Link><p>Collection</p><h1>{title}</h1><span>{description}</span></section><section className="store-catalog"><div className="store-catalog-tools"><span>{sorted.length} products</span><label>Sort<select value={sort} onChange={(event) => setSort(event.target.value)}><option value="featured">Featured</option><option value="low">Price low to high</option><option value="high">Price high to low</option><option value="name">Name A to Z</option></select></label></div><div className="store-grid">{sorted.map((product) => <StoreProductCard key={product.id} product={product} />)}</div></section><TrustBand /></main></StoreChrome>;
+  return <StoreChrome><main><section className="store-hero"><Link href="/"><ArrowLeft /> Home</Link><p>Collection</p><h1>{title}</h1><span>{description}</span></section><section className="store-catalog"><div className="store-catalog-tools"><span>{sorted.length} products</span><div className="store-sort"><span>Sort</span><CustomSelect ariaLabel="Sort products" value={sort} onChange={setSort} options={[{ value: "featured", label: "Featured" }, { value: "low", label: "Price low to high" }, { value: "high", label: "Price high to low" }, { value: "name", label: "Name A to Z" }]} /></div></div><div className="store-grid">{sorted.map((product) => <StoreProductCard key={product.id} product={product} />)}</div></section><TrustBand /></main></StoreChrome>;
 }
 
 export function StoreProductCard({ product }: { product: Product }) {
@@ -38,7 +38,7 @@ export function ProductPurchase({ product }: { product: Product }) {
     const next = found ? stored.map((item: { id: number; size?: string; quantity: number }) => item.id === product.id && item.size === size ? { ...item, quantity: item.quantity + quantity } : item) : [...stored, { ...product, size, quantity }];
     localStorage.setItem("rafiks-cart", JSON.stringify(next)); setAdded(true);
   };
-  return <div className="store-buy"><label>Size<select value={size} onChange={(event) => setSize(event.target.value)}>{product.sizes.map((item) => <option key={item}>{item}</option>)}</select></label><label>Quantity<span className="store-quantity"><button onClick={() => setQuantity(Math.max(1, quantity - 1))} aria-label="Decrease quantity"><Minus /></button>{quantity}<button onClick={() => setQuantity(quantity + 1)} aria-label="Increase quantity"><Plus /></button></span></label><button className="store-primary" onClick={add}>{added ? <><Check /> Added to cart</> : "Add to cart"}</button><p>Free shipping over $100 · Easy returns within 30 days</p></div>;
+  return <div className="store-buy"><label>Size<CustomSelect ariaLabel="Rug size" value={size} onChange={setSize} options={product.sizes.map((item) => ({ value: item, label: item }))} /></label><label>Quantity<span className="store-quantity"><button onClick={() => setQuantity(Math.max(1, quantity - 1))} aria-label="Decrease quantity"><Minus /></button>{quantity}<button onClick={() => setQuantity(quantity + 1)} aria-label="Increase quantity"><Plus /></button></span></label><button className="store-primary" onClick={add}>{added ? <><Check /> Added to cart</> : "Add to cart"}</button><p>Free shipping over $100 · Easy returns within 30 days</p></div>;
 }
 
 export function SearchView() {

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "@fontsource-variable/manrope";
+import { SiteChrome } from "@/components/storefront/site-chrome";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning><SiteChrome>{children}</SiteChrome></body>
     </html>
   );
 }
