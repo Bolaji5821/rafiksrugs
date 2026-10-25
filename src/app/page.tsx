@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { RafiksStorefront } from "@/components/storefront/rafiks-storefront";
+import { getStoreProducts } from "@/lib/api";
 
 export const metadata: Metadata = {
   title: "Rafik's Rugs — Handwoven Rugs Online",
@@ -7,6 +8,7 @@ export const metadata: Metadata = {
     "Browse handwoven rugs at Rafik's Rugs. Shop area rugs, runners, and more with fast shipping and easy returns.",
 };
 
-export default function Home() {
-  return <RafiksStorefront />;
+export default async function Home() {
+  const { products, failed } = await getStoreProducts();
+  return <RafiksStorefront products={products} loadFailed={failed} />;
 }
