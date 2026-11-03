@@ -14,11 +14,22 @@ import {
   Search,
   ShoppingBag,
 } from "lucide-react";
-import { money, type Product } from "@/lib/catalog";
+import { type Product } from "@/lib/catalog";
+import {
+  CurrencyProvider,
+  useMoney,
+} from "@/components/storefront/currency-context";
+import { useNewsletter } from "@/lib/use-newsletter";
 import "./store-pages.css";
 
-export function StoreChrome({ children }: { children: React.ReactNode }) {
-  return (
+export function StoreChrome({
+  children,
+  currency,
+}: {
+  children: React.ReactNode;
+  currency?: string;
+}) {
+  const page = (
     <div className="store-page">
       <header className="store-header">
         <Link
@@ -69,6 +80,11 @@ export function StoreChrome({ children }: { children: React.ReactNode }) {
       <RouteScrollTop />
     </div>
   );
+  return currency ? (
+    <CurrencyProvider currency={currency}>{page}</CurrencyProvider>
+  ) : (
+    page
+  );
 }
 
 function RouteScrollTop() {
@@ -103,11 +119,13 @@ export function CollectionView({
   loadFailed = false,
   title = "All rugs",
   description = "Explore every texture, tone, and shape in the collection.",
+  currency,
 }: {
   products: Product[];
   loadFailed?: boolean;
   title?: string;
   description?: string;
+  currency?: string;
 }) {
   const [sort, setSort] = useState("featured");
   const sorted = useMemo(
@@ -124,7 +142,7 @@ export function CollectionView({
     [products, sort],
   );
   return (
-    <StoreChrome>
+    <StoreChrome currency={currency}>
       <main>
         <section className="store-hero">
           <Link href="/">
@@ -171,6 +189,7 @@ export function CollectionView({
 }
 
 export function StoreProductCard({ product }: { product: Product }) {
+  const money = useMoney();
   return (
     <article className="store-product">
       {product.availability && product.availability !== "in_stock" ? (
@@ -275,9 +294,11 @@ export function ProductPurchase({ product }: { product: Product }) {
 export function SearchView({
   products,
   loadFailed = false,
+  currency,
 }: {
   products: Product[];
   loadFailed?: boolean;
+  currency?: string;
 }) {
   const [query, setQuery] = useState("");
   // Every word typed must appear somewhere in the rug, so "wool runner" finds wool rugs that are runners
@@ -292,7 +313,7 @@ export function SearchView({
       : products;
   }, [query, products]);
   return (
-    <StoreChrome>
+    <StoreChrome currency={currency}>
       <main>
         <section className="store-search">
           <p>Search the collection</p>
@@ -326,11 +347,7 @@ export function SearchView({
 }
 
 export function NewsletterBand() {
-  const [sent, setSent] = useState(false);
-  const submit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setSent(true);
-  };
+  const { status, error, submit } = useNewsletter();
   return (
     <section className="store-news">
       <div>
@@ -339,20 +356,32 @@ export function NewsletterBand() {
       </div>
       <form onSubmit={submit}>
         <input
+          name="email"
           type="email"
           required
+          maxLength={255}
           placeholder="Email address"
           aria-label="Email address"
         />
-        <button>
-          {sent ? (
+        <button disabled={status === "sending"}>
+          {status === "done" ? (
             "Subscribed"
+          ) : status === "sending" ? (
+            "Subscribing…"
           ) : (
             <>
               Subscribe <ArrowUpRight />
             </>
           )}
         </button>
+        {error && (
+          <p
+            role="alert"
+            style={{ flexBasis: "100%", margin: 0, fontSize: 14 }}
+          >
+            {error}
+          </p>
+        )}
       </form>
     </section>
   );

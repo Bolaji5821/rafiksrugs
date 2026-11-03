@@ -8,8 +8,8 @@ import {
   TrustBand,
 } from "@/components/storefront/store-pages";
 import { ProductGallery } from "@/components/storefront/product-gallery";
-import { money } from "@/lib/catalog";
-import { getStoreProduct, getStoreProducts } from "@/lib/api";
+import { formatMoney } from "@/lib/currency";
+import { getStoreCurrency, getStoreProduct, getStoreProducts } from "@/lib/api";
 import { categorySlug, productIdFromSlug } from "@/lib/slug";
 
 // Re-checks the admin's products at most once a minute
@@ -56,7 +56,11 @@ export default async function ProductPage({
   // If the product was renamed, send old links to the current address
   if (slug !== product.slug) permanentRedirect(`/products/${product.slug}`);
 
-  const { products: all } = await getStoreProducts();
+  const [{ products: all }, currency] = await Promise.all([
+    getStoreProducts(),
+    getStoreCurrency(),
+  ]);
+  const money = (value: number) => formatMoney(value, currency);
   const related = all
     .filter(
       (item) => item.id !== product.id && item.category === product.category,
@@ -83,7 +87,7 @@ export default async function ProductPage({
     countryOfOrigin: product.origin || undefined,
     offers: {
       "@type": "Offer",
-      priceCurrency: "USD",
+      priceCurrency: currency,
       price: product.price,
       availability: inStock
         ? "https://schema.org/InStock"
@@ -91,7 +95,7 @@ export default async function ProductPage({
     },
   };
   return (
-    <StoreChrome>
+    <StoreChrome currency={currency}>
       <main className="store-product-page">
         <script
           type="application/ld+json"

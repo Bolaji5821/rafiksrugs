@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CollectionView } from "@/components/storefront/store-pages";
-import { getStoreProducts } from "@/lib/api";
+import { getStoreCurrency, getStoreProducts } from "@/lib/api";
 import { categorySlug } from "@/lib/slug";
 
 // Re-checks the admin's products at most once a minute
@@ -36,9 +36,10 @@ export default async function CategoryPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const { failed, category, products } = await loadCategory(
-    (await params).slug,
-  );
+  const [{ failed, category, products }, currency] = await Promise.all([
+    loadCategory((await params).slug),
+    getStoreCurrency(),
+  ]);
   // If the API is down we can't tell a missing category from an empty list,
   // so show an error instead of a wrong "not found"
   if (failed) throw new Error("Could not load the products");
@@ -48,6 +49,7 @@ export default async function CategoryPage({
       title={category}
       description={`Distinctive ${category.toLowerCase()} selected for warmth, texture, and everyday living.`}
       products={products}
+      currency={currency}
     />
   );
 }

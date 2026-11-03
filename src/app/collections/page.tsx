@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { CollectionView } from "@/components/storefront/store-pages";
-import { getStoreProducts } from "@/lib/api";
+import { getStoreCurrency, getStoreProducts } from "@/lib/api";
 
 export const metadata: Metadata = {
   title: "Shop all rugs",
@@ -12,6 +12,15 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function CollectionsPage() {
-  const { products, failed } = await getStoreProducts();
-  return <CollectionView products={products} loadFailed={failed} />;
+  const [{ products, failed }, currency] = await Promise.all([
+    getStoreProducts(),
+    getStoreCurrency(),
+  ]);
+  return (
+    <CollectionView
+      products={products}
+      loadFailed={failed}
+      currency={currency}
+    />
+  );
 }

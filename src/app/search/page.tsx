@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { SearchView } from "@/components/storefront/store-pages";
-import { getStoreProducts } from "@/lib/api";
+import { getStoreCurrency, getStoreProducts } from "@/lib/api";
 
 export const metadata: Metadata = {
   title: "Search rugs",
@@ -12,6 +12,11 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function SearchPage() {
-  const { products, failed } = await getStoreProducts();
-  return <SearchView products={products} loadFailed={failed} />;
+  const [{ products, failed }, currency] = await Promise.all([
+    getStoreProducts(),
+    getStoreCurrency(),
+  ]);
+  return (
+    <SearchView products={products} loadFailed={failed} currency={currency} />
+  );
 }

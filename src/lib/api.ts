@@ -1,5 +1,6 @@
 import type { Product } from "@/lib/catalog";
 import { slugify } from "@/lib/slug";
+import { DEFAULT_CURRENCY } from "@/lib/currency";
 
 // Where the Rafik's Rugs backend lives. Set NEXT_PUBLIC_API_URL in .env.local
 // (and in the hosting dashboard for production).
@@ -80,8 +81,7 @@ export async function getStoreProducts(): Promise<{
         `${API_URL}/api/public/products?limit=${PAGE_SIZE}&page=${page}`,
         CACHE,
       );
-      if (!res.ok)
-        throw new Error(`The API answered with status ${res.status}`);
+      if (!res.ok) throw new Error(`The API answered with status ${res.status}`);
 
       const data = (await res.json()) as {
         products: ApiProduct[];
@@ -115,5 +115,93 @@ export async function getStoreProduct(
   } catch (err) {
     console.error("Could not load the product from the API:", err);
     return { product: null, failed: true };
+  }
+}
+
+// The "Request a rug" form. Runs in the browser, so the backend's CORS_ORIGINS
+// setting must include the storefront's address.
+export type CustomRequestInput = {
+  name: string;
+  email: string;
+  rugType: string;
+  size: string;
+  budget: string;
+  material?: string;
+  description: string;
+  // Up to 3 photos of what the customer has in mind (JPG, PNG or WebP, 5 MB each)
+  photos?: File[];
+};
+
+export async function submitCustomRequest(input: CustomRequestInput): Promise<void> {
+  const { photos = [], ...fields } = input;
+  let res: Response;
+  try {
+    if (photos.length > 0) {
+      // Files travel as a form; the browser sets the Content-Type itself
+      const body = new FormData();
+      for (const [key, value] of Object.entries(fields)) {
+        if (value !== undefined) body.append(key, value);
+      }
+      photos.forEach((file) => body.append("photos", file));
+      res = await fetch(`${API_URL}/api/public/custom-requests`, { method: "POST", body });
+    } else {
+      res = await fetch(`${API_URL}/api/public/custom-requests`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(fields),
+      });
+    }
+  } catch {
+    throw new Error("We couldn't reach the server. Please check your connection and try again.");
+  }
+
+  if (!res.ok) {
+    let message = "Something went wrong. Please try again.";
+    try {
+      const data = await res.json();
+      if (typeof data.message === "string" && data.message) message = data.message;
+    } catch {
+      /* keep the generic message */
+    }
+    throw new Error(message);
+  }
+}
+
+export async function subscribeToNewsletter(email: string): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/api/public/newsletter`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+  } catch {
+    throw new Error("We couldn't reach the server. Please try again.");
+  }
+
+  if (!res.ok) {
+    let message = "Something went wrong. Please try again.";
+    try {
+      const data = await res.json();
+      if (typeof data.message === "string" && data.message) message = data.message;
+    } catch {
+      /* keep the generic message */
+    }
+    throw new Error(message);
+  }
+}
+
+// The store currency set by the owner in the admin Settings page.
+// If the server can't be reached, prices fall back to the default currency.
+export async function getStoreCurrency(): Promise<string> {
+  try {
+    const res = await fetch(`${API_URL}/api/public/settings`, CACHE);
+    if (!res.ok) return DEFAULT_CURRENCY;
+    const data = await res.json();
+    return typeof data.currency === "string" && /^[A-Za-z]{3}$/.test(data.currency)
+      ? data.currency.toUpperCase()
+      : DEFAULT_CURRENCY;
+  } catch {
+    return DEFAULT_CURRENCY;
   }
 }
