@@ -19,6 +19,11 @@ import {
   CurrencyProvider,
   useMoney,
 } from "@/components/storefront/currency-context";
+import {
+  ConversionNote,
+  CurrencySwitcher,
+} from "@/components/storefront/currency-switcher";
+import { FREE_SHIPPING_OVER } from "@/lib/shipping";
 import { useNewsletter } from "@/lib/use-newsletter";
 import "./store-pages.css";
 
@@ -54,6 +59,7 @@ export function StoreChrome({
           <Link href="/">
             <ShoppingBag /> Cart
           </Link>
+          <CurrencySwitcher />
         </nav>
       </header>
       {children}
@@ -75,7 +81,12 @@ export function StoreChrome({
             <Link href="/shipping-returns">Shipping &amp; returns</Link>
           </nav>
         </div>
-        <small>© 2026 Rafik&apos;s Rugs · Privacy · Terms</small>
+        <small>
+          © 2026 Rafik&apos;s Rugs · Privacy · Terms ·{" "}
+          <a href="https://www.exchangerate-api.com">
+            Rates By Exchange Rate API
+          </a>
+        </small>
       </footer>
       <RouteScrollTop />
     </div>
@@ -215,6 +226,7 @@ export function StoreProductCard({ product }: { product: Product }) {
 }
 
 export function ProductPurchase({ product }: { product: Product }) {
+  const money = useMoney();
   const [size, setSize] = useState<string | undefined>(product.sizes[0]);
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
@@ -286,7 +298,11 @@ export function ProductPurchase({ product }: { product: Product }) {
           "Add to cart"
         )}
       </button>
-      <p>Free shipping over $100 · Easy returns within 30 days</p>
+      <p>
+        Free shipping over {money(FREE_SHIPPING_OVER)} · Easy returns within 30
+        days
+      </p>
+      <ConversionNote />
     </div>
   );
 }

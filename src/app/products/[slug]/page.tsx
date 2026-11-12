@@ -8,7 +8,7 @@ import {
   TrustBand,
 } from "@/components/storefront/store-pages";
 import { ProductGallery } from "@/components/storefront/product-gallery";
-import { formatMoney } from "@/lib/currency";
+import { Price } from "@/components/storefront/currency-switcher";
 import { getStoreCurrency, getStoreProduct, getStoreProducts } from "@/lib/api";
 import { categorySlug, productIdFromSlug } from "@/lib/slug";
 
@@ -60,7 +60,6 @@ export default async function ProductPage({
     getStoreProducts(),
     getStoreCurrency(),
   ]);
-  const money = (value: number) => formatMoney(value, currency);
   const related = all
     .filter(
       (item) => item.id !== product.id && item.category === product.category,
@@ -114,8 +113,12 @@ export default async function ProductPage({
             </div>
             <h1>{product.name}</h1>
             <p>
-              {product.oldPrice && <s>{money(product.oldPrice)}</s>}{" "}
-              {money(product.price)}
+              {product.oldPrice && (
+                <s>
+                  <Price value={product.oldPrice} />
+                </s>
+              )}{" "}
+              <Price value={product.price} />
             </p>
             {product.description && (
               <p className="store-description">{product.description}</p>
