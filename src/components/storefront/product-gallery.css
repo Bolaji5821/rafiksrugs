@@ -3,3 +3,22 @@
 @media(max-width:640px){.store-gallery-hint{top:1.25rem;left:1.25rem}}
 .store-gallery-hint{display:none}@media(max-width:640px){.store-gallery-hint{display:flex}}
 .store-gallery-hint{display:none!important}
+
+/* ---- Product page gallery (round 2): one big photo, thumbnails under it ---- */
+.pg{position:relative}
+.pg-stage{position:relative;overflow:hidden;border-radius:1.25rem;background:#e8e6e2}
+.pg-main{position:relative;display:block;width:100%;aspect-ratio:4/5;max-height:85vh;overflow:hidden;cursor:zoom-in;background:#e8e6e2}
+.pg-main img{display:block;width:100%;height:100%;object-fit:cover;transform-origin:var(--zoom-x,50%) var(--zoom-y,50%);transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.pg-zoom{position:absolute;right:1rem;bottom:1rem;display:flex;align-items:center;gap:.4rem;border-radius:99px;background:#fff;color:#0a0a0a;padding:.6rem .85rem;font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;box-shadow:0 .4rem 1.5rem rgba(0,0,0,.18)}
+.pg-zoom svg{width:.85rem;height:.85rem}
+.pg-arrow{position:absolute;top:50%;z-index:2;display:grid;place-items:center;width:2.75rem;height:2.75rem;border-radius:50%;background:rgba(255,255,255,.92);color:#0a0a0a;transform:translateY(-50%);box-shadow:0 .3rem 1rem rgba(0,0,0,.15)}
+.pg-arrow svg{width:1.15rem;height:1.15rem}
+.pg-prev{left:.85rem}.pg-next{right:.85rem}
+.pg-count{position:absolute;left:1rem;bottom:1rem;border-radius:99px;background:#0a0a0a;color:#fff;padding:.45rem .75rem;font-size:.62rem;letter-spacing:.1em}
+.pg-thumbs{display:flex;gap:.6rem;margin-top:.75rem;overflow-x:auto;padding-bottom:.25rem;scrollbar-width:thin}
+.pg-thumbs button{flex:none;width:5.5rem;aspect-ratio:1;overflow:hidden;border-radius:.6rem;border:2px solid transparent;opacity:.65;background:#e8e6e2;transition:opacity .2s,border-color .2s}
+.pg-thumbs button:hover{opacity:1}
+.pg-thumbs button.is-active{opacity:1;border-color:#0a0a0a}
+.pg-thumbs img{display:block;width:100%;height:100%;object-fit:cover}
+@media(hover:hover) and (pointer:fine){.pg-main:hover img{transform:scale(var(--hover-zoom,2))}.pg-main:hover .pg-zoom{opacity:0}}
+@media(max-width:640px){.pg-stage{border-radius:0;margin:0 -1.25rem}.pg-main{aspect-ratio:1/1.1}.pg-arrow{display:none}.pg-thumbs button{width:4.25rem}.pg-zoom{display:none}}

@@ -1,0 +1,467 @@
+.wish-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: inherit;
+}
+.wish-link svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+.wish-link i {
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.3rem;
+  border-radius: 99px;
+  display: grid;
+  place-items: center;
+  background: #b15f2c;
+  color: #fff;
+  font-style: normal;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+}
+/* Home header: a round button like the cart one */
+.rr-nav-actions .wish-link {
+  width: 2.75rem;
+  height: 2.75rem;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  color: #fff;
+}
+.rr-nav-actions .wish-link span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.rr-nav-actions .wish-link i {
+  position: absolute;
+  top: -0.45rem;
+  right: -0.45rem;
+  width: 1.25rem;
+  border: 2px solid #0a0a0a;
+  box-sizing: content-box;
+  min-width: 0;
+  height: 1.25rem;
+  padding: 0;
+  font-size: 0.58rem;
+}
+@media (max-width: 640px) {
+  .rr-nav-actions .wish-link {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  /* Phones: search, wishlist and cart stay as icons */
+  .store-header nav a.wish-link {
+    display: flex !important;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    justify-content: center;
+  }
+  .store-header nav a.wish-link span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .store-header nav a.wish-link i {
+    position: absolute;
+    top: 0;
+    right: -0.15rem;
+  }
+}
+
+/* ---- Heart on product cards, and the button on the product page ---- */
+.wish-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #0a0a0a;
+  cursor: pointer;
+}
+.wish-btn svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  transition: transform 0.2s;
+}
+.wish-btn.is-saved svg {
+  fill: #b15f2c;
+  stroke: #b15f2c;
+}
+.wish-btn:active svg {
+  transform: scale(0.85);
+}
+.wish-btn-icon {
+  position: absolute;
+  z-index: 3;
+  top: 0.7rem;
+  right: 0.7rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0.2rem 0.8rem rgba(0, 0, 0, 0.12);
+}
+.wish-btn-full {
+  width: 100%;
+  min-height: 3rem;
+  border: 1px solid #0a0a0a;
+  background: transparent;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.wish-btn-full:hover {
+  background: #0a0a0a;
+  color: #fff;
+}
+.wish-btn-full.is-saved:hover svg {
+  fill: #fff;
+  stroke: #fff;
+}
+
+/* ---- "New" badge: sits under the "Sale" badge when a rug has both ---- */
+.rr-product em.rr-new,
+.store-product em.store-new,
+.store-badge-new {
+  background: #0a0a0a;
+}
+.rr-product em ~ em,
+.store-product em ~ em {
+  top: 3rem;
+}
+.store-badges {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0 0 0.9rem;
+}
+.store-badges span {
+  border-radius: 99px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #fff;
+  background: #b15f2c;
+}
+.store-badges span.store-badge-new {
+  background: #0a0a0a;
+}
+
+/* Collection page: "New arrivals" filter */
+.store-filter-chip {
+  border: 1px solid currentColor;
+  border-radius: 99px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: transparent;
+  cursor: pointer;
+}
+.store-filter-chip[aria-pressed="true"] {
+  background: #0a0a0a;
+  color: #fff;
+  border-color: #0a0a0a;
+}
+
+/* ---- Social row, below the newsletter ---- */
+.social-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.75rem 1.5rem;
+  background: #fff;
+  border-top: 1px solid #ddd9d3;
+}
+.social-row p {
+  margin: 0;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #66625c;
+}
+.social-row ul {
+  display: flex;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.social-row a {
+  display: grid;
+  place-items: center;
+  width: 2.9rem;
+  height: 2.9rem;
+  border: 1px solid #0a0a0a;
+  border-radius: 50%;
+  color: #0a0a0a;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.social-row a:hover,
+.social-row a:focus-visible {
+  background: #0a0a0a;
+  color: #fff;
+}
+@media (max-width: 640px) {
+  .social-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* ---- Payment badges (footer) ---- */
+.pay-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pay-badges li {
+  border: 1px solid currentColor;
+  border-radius: 99px;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+/* ---- Payment method picker (checkout) ---- */
+.pay-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  border: 0;
+}
+.pay-picker legend {
+  margin-bottom: 0.7rem;
+  padding: 0;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #66625c;
+}
+.pay-picker label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #ddd9d3;
+  background: #fff;
+  cursor: pointer;
+}
+.pay-picker label.is-on {
+  border-color: #0a0a0a;
+  box-shadow: inset 0 0 0 1px #0a0a0a;
+}
+.pay-picker input {
+  margin-top: 0.2rem;
+  accent-color: #b15f2c;
+  width: auto;
+  flex: none;
+}
+.pay-picker span {
+  display: grid;
+  gap: 0.15rem;
+}
+.pay-picker small {
+  color: #66625c;
+  font-size: 0.74rem;
+}
+@media (max-width: 640px) {
+  .pay-picker {
+    grid-template-columns: 1fr;
+  }
+}
+.rr-optional {
+  color: #66625c;
+  font-size: 0.7rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ---- Back button ---- */
+.store-back-bar {
+  padding: 1.25rem 1.5rem 0;
+}
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0 1.1rem 0 0.9rem;
+  border: 1px solid #0a0a0a;
+  border-radius: 99px;
+  background: transparent;
+  color: #0a0a0a;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.back-btn svg {
+  width: 1rem;
+  height: 1rem;
+}
+.back-btn:hover,
+.back-btn:focus-visible {
+  background: #0a0a0a;
+  color: #fff;
+}
+
+/* ---- Size grid ---- */
+.size-picker {
+  margin-top: 1.25rem;
+}
+.size-picker p {
+  margin: 0 0 0.7rem;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #66625c;
+}
+.size-picker p strong {
+  color: #0a0a0a;
+  font-weight: 600;
+}
+.size-picker > div {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+  gap: 0.5rem;
+}
+.size-picker button {
+  min-height: 3.1rem;
+  padding: 0 0.6rem;
+  border: 1px solid #ddd9d3;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: #0a0a0a;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.size-picker button:hover {
+  border-color: #0a0a0a;
+}
+.size-picker button.is-on {
+  border-color: #0a0a0a;
+  box-shadow: inset 0 0 0 1px #0a0a0a;
+  background: #faf9f7;
+}
+
+/* ---- Product page: key facts and accordion ---- */
+.store-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: 0.6rem;
+  margin: 1.5rem 0 0;
+}
+.store-facts div {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #ddd9d3;
+  border-radius: 0.6rem;
+  background: #faf9f7;
+}
+.store-facts small {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #66625c;
+}
+.store-facts strong {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.store-accordion {
+  margin-top: 2rem;
+  border-top: 1px solid #ddd9d3;
+}
+.store-accordion details {
+  border-bottom: 1px solid #ddd9d3;
+}
+.store-accordion summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.15rem 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  list-style: none;
+}
+.store-accordion summary::-webkit-details-marker {
+  display: none;
+}
+.store-accordion summary::after {
+  content: "+";
+  font-size: 1.3rem;
+  font-weight: 300;
+  line-height: 1;
+}
+.store-accordion details[open] summary::after {
+  content: "\2212";
+}
+.store-accordion details > p {
+  margin: 0 0 1.25rem;
+  color: #55514b;
+  line-height: 1.75;
+  font-size: 0.95rem;
+}
+.store-accordion dl {
+  margin: 0 0 1.25rem;
+  display: grid;
+  gap: 0;
+}
+.store-accordion dl div {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid #eeebe6;
+  font-size: 0.9rem;
+}
+.store-accordion dt {
+  color: #66625c;
+}
+.store-accordion dd {
+  margin: 0;
+  line-height: 1.5;
+}
+@media (max-width: 640px) {
+  .store-back-bar {
+    padding: 1rem 1.25rem 0;
+  }
+  .store-accordion dl div {
+    grid-template-columns: 6.5rem 1fr;
+  }
+}

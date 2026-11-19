@@ -1,0 +1,62 @@
+/* Storefront round 1 (store pages). Loaded after store-pages.css, so it overrides it. */
+
+/* Cart link with a count, and search/cart that stay visible on phones */
+.store-cart-link {
+  position: relative;
+}
+.store-cart-link i {
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.3rem;
+  border-radius: 99px;
+  display: grid;
+  place-items: center;
+  background: var(--terra);
+  color: #fff;
+  font-style: normal;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+@media (max-width: 640px) {
+  /* store-pages.css hides every header link but the last one on phones;
+     keep search and cart, as icons */
+  .store-header nav a.store-search-link,
+  .store-header nav a.store-cart-link {
+    display: flex !important;
+  }
+  .store-header nav {
+    gap: 1rem;
+  }
+  .store-header nav a.store-search-link span,
+  .store-header nav a.store-cart-link span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .store-header nav a.store-search-link,
+  .store-header nav a.store-cart-link {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    justify-content: center;
+  }
+  .store-header nav a.store-cart-link i {
+    position: absolute;
+    top: 0;
+    right: -0.15rem;
+  }
+}
+
+/* After "Add to cart" on a product page */
+.store-view-cart {
+  display: block;
+  margin-top: 0.8rem;
+  text-align: center;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-decoration: underline;
+}

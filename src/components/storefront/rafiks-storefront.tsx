@@ -41,7 +41,21 @@ import { useStoreSettings } from "@/lib/use-store-settings";
 import { submitCustomRequest } from "@/lib/api";
 import { ProductGallery } from "@/components/storefront/product-gallery";
 import { useNewsletter } from "@/lib/use-newsletter";
+import {
+  PaymentBadges,
+  PaymentMethodPicker,
+  SizePicker,
+  SocialLinks,
+  WishlistButton,
+  WishlistLink,
+  paymentLabel,
+  type PaymentMethodId,
+} from "@/components/storefront/extras";
 import "./storefront.css";
+import "./storefront-redesign.css";
+
+// The home page shows the newest rugs; everything else is on /collections
+const HOME_PRODUCT_LIMIT = 8;
 
 const MAX_PHOTOS = 3;
 const MAX_PHOTO_MB = 5;
@@ -191,7 +205,7 @@ function HomeNewsletterForm() {
   );
 }
 
-type CartItem = Product & { quantity: number };
+type CartItem = Product & { quantity: number; size?: string };
 
 // A rug can be bought unless the owner marked it sold out or unavailable
 const canBuy = (product: Product) =>
@@ -224,6 +238,7 @@ function StorefrontContent({
   const money = useMoney();
   const storeSettings = useStoreSettings(); // shipping and tax from the admin Settings page
   const lenisRef = useRef<Lenis | null>(null);
+  const cartReady = useRef(false);
   const [loaded, setLoaded] = useState(false);
   const [progress, setProgress] = useState(0);
   const [featureIndex, setFeatureIndex] = useState(0);
@@ -237,6 +252,11 @@ function StorefrontContent({
   const [cart, setCart] = useState<CartItem[]>([]);
   const [checkout, setCheckout] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState(0);
+  const [details, setDetails] = useState<Record<string, string>>({});
+  const [payMethod, setPayMethod] = useState<PaymentMethodId>("card");
+  const setDetail = (key: string, value: string) =>
+    setDetails((current) => ({ ...current, [key]: value }));
+  const [selectedSize, setSelectedSize] = useState("");
   const [requestSent, setRequestSent] = useState(false);
   const [requestSending, setRequestSending] = useState(false);
   const [requestError, setRequestError] = useState("");
@@ -275,26 +295,56 @@ function StorefrontContent({
     "All",
     ...categories.map((category) => category.name),
     ...(products.some((product) => product.oldPrice) ? ["Sale"] : []),
+    ...(products.some((product) => product.newArrival) ? ["New"] : []),
   ];
 
   useEffect(() => {
     window.scrollTo(0, 0);
     const started = performance.now();
+    // Return visits in the same session get a short loader
+    let seen = false;
+    try {
+      seen = sessionStorage.getItem("rr-seen") === "1";
+    } catch {
+      /* private mode: show the full loader */
+    }
+    const duration = seen ? 350 : 1300;
     let frame = 0;
     const ease = (value: number) =>
       value < 0.5 ? 4 * value ** 3 : 1 - (-2 * value + 2) ** 3 / 2;
     const tick = (now: number) => {
-      const next = Math.round(ease(Math.min((now - started) / 1300, 1)) * 100);
+      const next = Math.round(
+        ease(Math.min((now - started) / duration, 1)) * 100,
+      );
       setProgress(next);
       if (next < 100) frame = requestAnimationFrame(tick);
-      else window.setTimeout(() => setLoaded(true), 260);
+      else {
+        try {
+          sessionStorage.setItem("rr-seen", "1");
+        } catch {
+          /* private mode */
+        }
+        window.setTimeout(() => setLoaded(true), seen ? 80 : 260);
+      }
     };
     frame = requestAnimationFrame(tick);
     const cartTimer = window.setTimeout(() => {
       try {
-        setCart(JSON.parse(localStorage.getItem("rafiks-cart") || "[]"));
+        const stored = JSON.parse(localStorage.getItem("rafiks-cart") || "[]");
+        setCart(Array.isArray(stored) ? stored : []);
       } catch {
         setCart([]);
+      }
+      // Only start saving once the stored cart has been read (see the save effect below)
+      cartReady.current = true;
+      // The store pages link here with ?cart=1 to open the cart
+      if (new URLSearchParams(window.location.search).get("cart") === "1") {
+        setCartOpen(true);
+        window.history.replaceState(
+          null,
+          "",
+          window.location.pathname + window.location.hash,
+        );
       }
     }, 0);
     return () => {
@@ -370,45 +420,7 @@ function StorefrontContent({
   }, []);
 
   useEffect(() => {
-    const section = categorySectionRef.current;
-    const sticky = categoryStickyRef.current;
-    const viewport = categoryViewportRef.current;
-    const track = categoryTrackRef.current;
-    if (!section || !sticky || !viewport || !track) return;
-    gsap.registerPlugin(ScrollTrigger);
-    const media = gsap.matchMedia();
-    media.add(
-      "(max-width: 640px) and (prefers-reduced-motion: no-preference)",
-      () => {
-        const distance = () =>
-          Math.max(0, track.scrollWidth - viewport.clientWidth);
-        const tween = gsap.to(track, {
-          x: () => -distance(),
-          ease: "none",
-          scrollTrigger: {
-            trigger: section,
-            start: "top top",
-            end: () => `+=${distance()}`,
-            pin: section,
-            pinSpacing: true,
-            pinType: "fixed",
-            scrub: true,
-            anticipatePin: 1,
-            invalidateOnRefresh: true,
-          },
-        });
-        requestAnimationFrame(() => ScrollTrigger.refresh());
-        return () => {
-          tween.scrollTrigger?.kill();
-          tween.kill();
-          gsap.set(track, { clearProps: "transform" });
-        };
-      },
-    );
-    return () => media.revert();
-  }, [categories.length]);
-
-  useEffect(() => {
+    if (!cartReady.current) return;
     localStorage.setItem("rafiks-cart", JSON.stringify(cart));
   }, [cart]);
 
@@ -417,7 +429,8 @@ function StorefrontContent({
       (product) =>
         filter === "All" ||
         product.category === filter ||
-        (filter === "Sale" && product.oldPrice),
+        (filter === "Sale" && product.oldPrice) ||
+        (filter === "New" && product.newArrival),
     );
     return [...list].sort((a, b) =>
       sort === "low"
@@ -430,6 +443,8 @@ function StorefrontContent({
     );
   }, [products, filter, sort]);
 
+  const visibleCatalog = catalog.slice(0, HOME_PRODUCT_LIMIT);
+
   const searchResults = useMemo(() => {
     const value = query.trim().toLowerCase();
     return value
@@ -439,6 +454,9 @@ function StorefrontContent({
       : products.slice(0, 4);
   }, [products, query]);
 
+  const activeSize = selected?.sizes.includes(selectedSize)
+    ? selectedSize
+    : selected?.sizes[0];
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const totals = orderTotals(
@@ -447,27 +465,32 @@ function StorefrontContent({
     storeSettings.taxRate,
   );
 
-  const addToCart = (product: Product, open = true) => {
+  const sameLine = (item: CartItem, id: number, size?: string) =>
+    item.id === id && (item.size ?? "") === (size ?? "");
+
+  const addToCart = (product: Product, open = true, size?: string) => {
     if (!canBuy(product)) return;
     setCart((items) => {
-      const existing = items.find((item) => item.id === product.id);
+      const existing = items.find((item) => sameLine(item, product.id, size));
       return existing
         ? items.map((item) =>
-            item.id === product.id
+            sameLine(item, product.id, size)
               ? { ...item, quantity: item.quantity + 1 }
               : item,
           )
-        : [...items, { ...product, quantity: 1 }];
+        : [...items, { ...product, size, quantity: 1 }];
     });
     setSelected(null);
     if (open) setCartOpen(true);
   };
 
-  const updateQuantity = (id: number, change: number) =>
+  const updateQuantity = (id: number, change: number, size?: string) =>
     setCart((items) =>
       items
         .map((item) =>
-          item.id === id ? { ...item, quantity: item.quantity + change } : item,
+          sameLine(item, id, size)
+            ? { ...item, quantity: item.quantity + change }
+            : item,
         )
         .filter((item) => item.quantity > 0),
     );
@@ -587,6 +610,7 @@ function StorefrontContent({
               <Search size={18} />
               <span>Search</span>
             </button>
+            <WishlistLink />
             <button
               className="rr-cart-trigger"
               onClick={() => setCartOpen(true)}
@@ -702,17 +726,47 @@ function StorefrontContent({
           </section>
         )}
 
-        <section className="rr-create-band" aria-label="Why shop Rafik's Rugs">
+        <section className="rr-service" aria-label="Shopping with Rafik's Rugs">
           {[
-            "Distinctive rugs",
-            "Carefully sourced",
-            "Fairly priced",
-            "Made for living",
-          ].map((promise, index) => (
-            <Reveal key={promise} delay={index * 120}>
-              <span className={`rr-create-${index + 1}`}>{promise}</span>
-            </Reveal>
-          ))}
+            {
+              title: "Free shipping",
+              text: `On orders over ${money(FREE_SHIPPING_OVER)}`,
+              href: "",
+            },
+            {
+              title: "30-day returns",
+              text: "Time to see it in your room",
+              href: "",
+            },
+            {
+              title: "Made to request",
+              text: "Can't find it? Tell us what you need",
+              href: "#request",
+            },
+            {
+              title: "Care guidance",
+              text: "Practical help for every rug",
+              href: "/shipping-returns#care",
+            },
+          ].map((item, index) => {
+            const body = (
+              <>
+                <strong>{item.title}</strong>
+                <span>{item.text}</span>
+              </>
+            );
+            return (
+              <Reveal key={item.title} delay={index * 80}>
+                {!item.href ? (
+                  <div>{body}</div>
+                ) : item.href.startsWith("#") ? (
+                  <a href={item.href}>{body}</a>
+                ) : (
+                  <Link href={item.href}>{body}</Link>
+                )}
+              </Reveal>
+            );
+          })}
         </section>
 
         {spotlight && (
@@ -777,7 +831,7 @@ function StorefrontContent({
             </label>
           </div>
           <div className="rr-products">
-            {catalog.map((product, index) => (
+            {visibleCatalog.map((product, index) => (
               <Reveal key={product.id} delay={index * 90}>
                 <ProductCard
                   product={product}
@@ -803,6 +857,13 @@ function StorefrontContent({
               </p>
             )}
           </div>
+          {catalog.length > HOME_PRODUCT_LIMIT && (
+            <div className="rr-viewall">
+              <Link className="rr-pill" href="/collections">
+                View all rugs <ArrowUpRight />
+              </Link>
+            </div>
+          )}
         </section>
 
         <Stats products={products} />
@@ -914,6 +975,7 @@ function StorefrontContent({
             <HomeNewsletterForm />
           </Reveal>
         </section>
+        <SocialLinks />
       </main>
 
       <footer className="rr-footer">
@@ -941,7 +1003,7 @@ function StorefrontContent({
           </div>
           <div>
             <small>Payment methods</small>
-            <span>VISA · MC · AMEX · SHOP</span>
+            <PaymentBadges />
           </div>
         </div>
         <p>
@@ -1016,33 +1078,91 @@ function StorefrontContent({
         title={`Your cart (${itemCount})`}
       >
         <div className="rr-cart-items">
+          {cart.length > 0 && storeSettings.shippingRate > 0 && (
+            <div className="rr-ship-meter">
+              <p>
+                {totals.shipping === 0 ? (
+                  "You've unlocked free shipping."
+                ) : (
+                  <>
+                    Add <strong>{money(FREE_SHIPPING_OVER - total)}</strong>{" "}
+                    more for free shipping.
+                  </>
+                )}
+              </p>
+              <i aria-hidden="true">
+                <span
+                  style={{
+                    width: `${Math.min(100, (total / FREE_SHIPPING_OVER) * 100)}%`,
+                  }}
+                />
+              </i>
+            </div>
+          )}
           {cart.length ? (
             cart.map((item) => (
-              <div className="rr-cart-item" key={item.id}>
+              <div
+                className="rr-cart-item"
+                key={`${item.id}-${item.size ?? ""}`}
+              >
                 <img src={item.image} alt="" />
                 <div>
                   <strong>{item.name}</strong>
+                  {item.size && <small>Size: {item.size}</small>}
                   <small>{money(item.price)}</small>
                   <span>
-                    <button onClick={() => updateQuantity(item.id, -1)}>
+                    <button
+                      type="button"
+                      aria-label={`Decrease quantity of ${item.name}`}
+                      onClick={() => updateQuantity(item.id, -1, item.size)}
+                    >
                       <Minus />
                     </button>
                     {item.quantity}
-                    <button onClick={() => updateQuantity(item.id, 1)}>
+                    <button
+                      type="button"
+                      aria-label={`Increase quantity of ${item.name}`}
+                      onClick={() => updateQuantity(item.id, 1, item.size)}
+                    >
                       <Plus />
+                    </button>
+                    <button
+                      type="button"
+                      className="rr-remove"
+                      aria-label={`Remove ${item.name} from the cart`}
+                      onClick={() =>
+                        updateQuantity(item.id, -item.quantity, item.size)
+                      }
+                    >
+                      Remove
                     </button>
                   </span>
                 </div>
               </div>
             ))
           ) : (
-            <p>Your cart is empty.</p>
+            <div className="rr-cart-empty">
+              <p>Your cart is empty.</p>
+              <button
+                type="button"
+                className="rr-button"
+                onClick={() => {
+                  setCartOpen(false);
+                  lenisRef.current?.scrollTo("#collection", { duration: 1.1 });
+                }}
+              >
+                Browse rugs
+              </button>
+            </div>
           )}
         </div>
         <div className="rr-cart-total">
           <span>
             Subtotal <strong>{money(total)}</strong>
           </span>
+          <small className="rr-cart-note">
+            Shipping and tax are shown at checkout.
+          </small>
           <ConversionNote />
           <button
             className="rr-button"
@@ -1110,20 +1230,15 @@ function StorefrontContent({
                     ))}
                 </ul>
               )}
-              {selected.sizes.length > 0 && (
-                <label>
-                  Size
-                  <select>
-                    {selected.sizes.map((size) => (
-                      <option key={size}>{size}</option>
-                    ))}
-                  </select>
-                </label>
-              )}
+              <SizePicker
+                sizes={selected.sizes}
+                value={activeSize ?? ""}
+                onChange={setSelectedSize}
+              />
               <button
                 className="rr-button"
                 disabled={!canBuy(selected)}
-                onClick={() => addToCart(selected)}
+                onClick={() => addToCart(selected, true, activeSize)}
               >
                 {canBuy(selected) ? "Add to cart" : "Sold out"}
               </button>
@@ -1140,43 +1255,54 @@ function StorefrontContent({
         open={checkout}
         className="rr-checkout-panel"
         close={() => setCheckout(false)}
-        title="Secure checkout"
+        title="Checkout"
       >
         {checkoutStep < 3 ? (
           <div className="rr-checkout">
             <div className="rr-checkout-main">
               <div className="rr-steps">
-                <b className={checkoutStep === 0 ? "active" : ""}>
-                  01 Information
-                </b>
-                <b className={checkoutStep === 1 ? "active" : ""}>02 Payment</b>
-                <b className={checkoutStep === 2 ? "active" : ""}>03 Review</b>
+                {["Information", "Payment", "Review"].map((label, index) => (
+                  <b
+                    key={label}
+                    className={
+                      checkoutStep === index
+                        ? "active"
+                        : checkoutStep > index
+                          ? "done"
+                          : ""
+                    }
+                  >
+                    {String(index + 1).padStart(2, "0")} {label}
+                  </b>
+                ))}
               </div>
               {checkoutStep === 0 && (
                 <CheckoutForm
                   title="Where should we send it?"
+                  fields={INFO_FIELDS}
+                  values={details}
+                  onChange={setDetail}
                   submit={submitCheckout}
-                  fields={[
-                    "Email",
-                    "First name",
-                    "Last name",
-                    "Address",
-                    "City",
-                    "Postal code",
-                  ]}
                   button="Continue to payment"
                 />
               )}
               {checkoutStep === 1 && (
                 <CheckoutForm
-                  title="Payment details"
+                  title="Payment"
+                  notice={
+                    payMethod === "card"
+                      ? "Demo checkout: no payment is taken, so please don't enter real card details."
+                      : `Demo checkout: no payment is taken. With a real checkout, ${paymentLabel(payMethod)} would be set up here.`
+                  }
+                  before={
+                    <PaymentMethodPicker
+                      value={payMethod}
+                      onChange={setPayMethod}
+                    />
+                  }
+                  fields={payMethod === "card" ? PAYMENT_FIELDS : []}
                   submit={submitCheckout}
-                  fields={[
-                    "Card number",
-                    "Expiry",
-                    "Security code",
-                    "Name on card",
-                  ]}
+                  onBack={() => setCheckoutStep(0)}
                   button="Review order"
                 />
               )}
@@ -1186,13 +1312,35 @@ function StorefrontContent({
                     event.preventDefault();
                     setCheckoutStep(3);
                     setCart([]);
+                    setDetails({});
+                    setPayMethod("card");
                   }}
                 >
                   <h2>Ready to place your order</h2>
+                  <p className="rr-checkout-address">
+                    Sending to{" "}
+                    {[details.firstName, details.lastName]
+                      .filter(Boolean)
+                      .join(" ")}
+                    , {details.address}, {details.city} {details.postal}
+                    {details.phone ? ` · ${details.phone}` : ""}
+                  </p>
+                  <p className="rr-checkout-address">
+                    Payment: {paymentLabel(payMethod)}
+                  </p>
                   <p>
                     This storefront prototype does not process a real payment.
                   </p>
-                  <button className="rr-button">Place order</button>
+                  <div className="rr-checkout-actions">
+                    <button
+                      type="button"
+                      className="rr-back"
+                      onClick={() => setCheckoutStep(1)}
+                    >
+                      Back
+                    </button>
+                    <button className="rr-button">Place order</button>
+                  </div>
                 </form>
               )}
             </div>
@@ -1205,8 +1353,9 @@ function StorefrontContent({
                 <div>
                   <h3>Order summary</h3>
                   {cart.map((item) => (
-                    <p key={item.id}>
-                      {item.name} × {item.quantity}
+                    <p key={`${item.id}-${item.size ?? ""}`}>
+                      {item.name}
+                      {item.size ? ` (${item.size})` : ""} × {item.quantity}
                       <strong>{money(item.price * item.quantity)}</strong>
                     </p>
                   ))}
@@ -1280,7 +1429,15 @@ function ProductCard({
   const buyable = canBuy(product);
   return (
     <article className="rr-product">
-      {!buyable ? <em>Sold out</em> : product.oldPrice && <em>Sale</em>}
+      {!buyable ? (
+        <em>Sold out</em>
+      ) : (
+        <>
+          {product.oldPrice && <em>Sale</em>}
+          {product.newArrival && <em className="rr-new">New</em>}
+        </>
+      )}
+      <WishlistButton productId={product.id} name={product.name} />
       <button className="rr-product-image" onClick={() => onView(product)}>
         <img src={product.image} alt={product.name} />
       </button>
@@ -1351,29 +1508,143 @@ function Panel({
   );
 }
 
+type CheckoutField = {
+  key: string;
+  label: string;
+  type?: string;
+  autoComplete?: string;
+  inputMode?: "numeric" | "text" | "tel";
+  maxLength?: number;
+  wide?: boolean;
+  optional?: boolean;
+};
+
+const INFO_FIELDS: CheckoutField[] = [
+  {
+    key: "email",
+    label: "Email",
+    type: "email",
+    autoComplete: "email",
+    wide: true,
+  },
+  { key: "firstName", label: "First name", autoComplete: "given-name" },
+  { key: "lastName", label: "Last name", autoComplete: "family-name" },
+  {
+    key: "address",
+    label: "Address",
+    autoComplete: "address-line1",
+    wide: true,
+  },
+  { key: "city", label: "City", autoComplete: "address-level2" },
+  { key: "postal", label: "Postal code", autoComplete: "postal-code" },
+  {
+    key: "phone",
+    label: "Phone number",
+    type: "tel",
+    autoComplete: "tel",
+    inputMode: "tel",
+    maxLength: 20,
+    optional: true,
+    wide: true,
+  },
+];
+
+const PAYMENT_FIELDS: CheckoutField[] = [
+  {
+    key: "cardNumber",
+    label: "Card number",
+    autoComplete: "cc-number",
+    inputMode: "numeric",
+    maxLength: 23,
+    wide: true,
+  },
+  {
+    key: "expiry",
+    label: "Expiry",
+    autoComplete: "cc-exp",
+    inputMode: "numeric",
+    maxLength: 7,
+  },
+  {
+    key: "cvc",
+    label: "Security code",
+    autoComplete: "cc-csc",
+    inputMode: "numeric",
+    maxLength: 4,
+  },
+  {
+    key: "cardName",
+    label: "Name on card",
+    autoComplete: "cc-name",
+    wide: true,
+  },
+];
+
+// Information fields are kept in the parent, so Back doesn't lose them.
+// Card fields are deliberately not stored anywhere.
 function CheckoutForm({
   title,
   fields,
+  values,
+  onChange,
+  notice,
+  before,
   button,
   submit,
+  onBack,
 }: {
   title: string;
-  fields: string[];
+  fields: CheckoutField[];
+  values?: Record<string, string>;
+  onChange?: (key: string, value: string) => void;
+  notice?: string;
+  before?: ReactNode;
   button: string;
   submit: (event: FormEvent<HTMLFormElement>) => void;
+  onBack?: () => void;
 }) {
   return (
     <form onSubmit={submit}>
       <h2>{title}</h2>
+      {notice && (
+        <p className="rr-checkout-notice" role="note">
+          {notice}
+        </p>
+      )}
+      {before}
       <div className="rr-checkout-fields">
         {fields.map((field) => (
-          <label key={field}>
-            {field}
-            <input required type={field === "Email" ? "email" : "text"} />
+          <label key={field.key} className={field.wide ? "wide" : undefined}>
+            <span>
+              {field.label}
+              {field.optional && <span className="rr-optional"> (optional)</span>}
+            </span>
+            <input
+              required={!field.optional}
+              name={field.key}
+              type={field.type ?? "text"}
+              autoComplete={field.autoComplete}
+              inputMode={field.inputMode}
+              maxLength={field.maxLength}
+              value={values ? (values[field.key] ?? "") : undefined}
+              onChange={
+                values
+                  ? (event: React.ChangeEvent<HTMLInputElement>) =>
+                      onChange?.(field.key, event.target.value)
+                  : undefined
+              }
+            />
           </label>
         ))}
       </div>
-      <button className="rr-button">{button}</button>
+      <div className="rr-checkout-actions">
+        {onBack && (
+          <button type="button" className="rr-back" onClick={onBack}>
+            Back
+          </button>
+        )}
+        <button className="rr-button">{button}</button>
+      </div>
     </form>
   );
 }

@@ -879,8 +879,3 @@
     width: 9rem;
   }
 }
-.rr-logo img,
-.rr-loader-logo img,
-.rr-footer-logo img {
-  filter: invert(1) hue-rotate(180deg);
-}

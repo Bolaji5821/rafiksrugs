@@ -25,7 +25,15 @@ import {
 } from "@/components/storefront/currency-switcher";
 import { FREE_SHIPPING_OVER } from "@/lib/shipping";
 import { useNewsletter } from "@/lib/use-newsletter";
+import {
+  PaymentBadges,
+  SizePicker,
+  SocialLinks,
+  WishlistButton,
+  WishlistLink,
+} from "@/components/storefront/extras";
 import "./store-pages.css";
+import "./store-pages-redesign.css";
 
 export function StoreChrome({
   children,
@@ -52,13 +60,12 @@ export function StoreChrome({
         </Link>
         <nav>
           <Link href="/collections">Shop</Link>
-          <Link href="/search">
-            <Search /> Search
+          <Link className="store-search-link" href="/search">
+            <Search /> <span>Search</span>
           </Link>
           <Link href="/#request">Request a rug</Link>
-          <Link href="/">
-            <ShoppingBag /> Cart
-          </Link>
+          <WishlistLink />
+          <CartLink />
           <CurrencySwitcher />
         </nav>
       </header>
@@ -80,6 +87,7 @@ export function StoreChrome({
             <Link href="/search">Search</Link>
             <Link href="/shipping-returns">Shipping &amp; returns</Link>
           </nav>
+          <PaymentBadges />
         </div>
         <small>
           © 2026 Rafik&apos;s Rugs · Privacy · Terms ·{" "}
@@ -95,6 +103,46 @@ export function StoreChrome({
     <CurrencyProvider currency={currency}>{page}</CurrencyProvider>
   ) : (
     page
+  );
+}
+
+function CartLink() {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    const read = () => {
+      try {
+        const items = JSON.parse(localStorage.getItem("rafiks-cart") || "[]");
+        setCount(
+          Array.isArray(items)
+            ? items.reduce(
+                (sum: number, item: { quantity?: number }) =>
+                  sum + (item.quantity ?? 0),
+                0,
+              )
+            : 0,
+        );
+      } catch {
+        setCount(0);
+      }
+    };
+    read();
+    // The product page announces changes so the number updates without a reload
+    window.addEventListener("rafiks-cart", read);
+    window.addEventListener("storage", read);
+    return () => {
+      window.removeEventListener("rafiks-cart", read);
+      window.removeEventListener("storage", read);
+    };
+  }, []);
+  return (
+    <Link
+      className="store-cart-link"
+      href="/?cart=1"
+      aria-label={`Cart, ${count} ${count === 1 ? "item" : "items"}`}
+    >
+      <ShoppingBag /> <span>Cart</span>
+      {count > 0 && <i>{count}</i>}
+    </Link>
   );
 }
 
@@ -139,9 +187,11 @@ export function CollectionView({
   currency?: string;
 }) {
   const [sort, setSort] = useState("featured");
+  const [onlyNew, setOnlyNew] = useState(false);
+  const hasNew = products.some((product) => product.newArrival);
   const sorted = useMemo(
     () =>
-      [...products].sort((a, b) =>
+      (onlyNew ? products.filter((product) => product.newArrival) : [...products]).sort((a, b) =>
         sort === "low"
           ? a.price - b.price
           : sort === "high"
@@ -150,7 +200,7 @@ export function CollectionView({
               ? a.name.localeCompare(b.name)
               : b.id - a.id,
       ),
-    [products, sort],
+    [products, sort, onlyNew],
   );
   return (
     <StoreChrome currency={currency}>
@@ -166,6 +216,16 @@ export function CollectionView({
         <section className="store-catalog">
           <div className="store-catalog-tools">
             <span>{sorted.length} products</span>
+            {hasNew && (
+              <button
+                type="button"
+                className="store-filter-chip"
+                aria-pressed={onlyNew}
+                onClick={() => setOnlyNew(!onlyNew)}
+              >
+                New arrivals
+              </button>
+            )}
             <label>
               Sort
               <select
@@ -208,8 +268,12 @@ export function StoreProductCard({ product }: { product: Product }) {
           {product.availability === "sold_out" ? "Sold out" : "Unavailable"}
         </em>
       ) : (
-        product.oldPrice && <em>Sale</em>
+        <>
+          {product.oldPrice && <em>Sale</em>}
+          {product.newArrival && <em className="store-new">New</em>}
+        </>
       )}
+      <WishlistButton productId={product.id} name={product.name} />
       <Link href={`/products/${product.slug}`}>
         <img src={product.image} alt={product.name} />
         <div>
@@ -248,23 +312,16 @@ export function ProductPurchase({ product }: { product: Product }) {
         )
       : [...stored, { ...product, size, quantity }];
     localStorage.setItem("rafiks-cart", JSON.stringify(next));
+    window.dispatchEvent(new Event("rafiks-cart"));
     setAdded(true);
   };
   return (
     <div className="store-buy">
-      {product.sizes.length > 0 && (
-        <label>
-          Size
-          <select
-            value={size}
-            onChange={(event) => setSize(event.target.value)}
-          >
-            {product.sizes.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-        </label>
-      )}
+      <SizePicker
+        sizes={product.sizes}
+        value={size ?? ""}
+        onChange={setSize}
+      />
       <label>
         Quantity
         <span className="store-quantity">
@@ -298,6 +355,16 @@ export function ProductPurchase({ product }: { product: Product }) {
           "Add to cart"
         )}
       </button>
+      <WishlistButton
+        productId={product.id}
+        name={product.name}
+        variant="full"
+      />
+      {added && (
+        <Link className="store-view-cart" href="/?cart=1">
+          View cart and checkout
+        </Link>
+      )}
       <p>
         Free shipping over {money(FREE_SHIPPING_OVER)} · Easy returns within 30
         days
@@ -425,6 +492,7 @@ export function TrustBand() {
         </div>
       </section>
       <NewsletterBand />
+      <SocialLinks />
     </>
   );
 }

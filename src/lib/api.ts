@@ -28,6 +28,8 @@ type ApiProduct = {
   sizes: string[];
   care: string | null;
   oldPrice: number | null;
+  // The owner ticked "new arrival" in the admin (older backends don't send it)
+  isNewArrival?: boolean;
 };
 
 // Turns an API product into the shape the storefront components already use.
@@ -55,6 +57,7 @@ export function toStoreProduct(p: ApiProduct): Product {
     // The public API hides the exact stock on purpose, so this is only 0 or 1
     inventory: p.availability === "in_stock" ? 1 : 0,
     availability: p.availability,
+    newArrival: p.isNewArrival === true,
   };
 }
 

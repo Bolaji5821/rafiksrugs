@@ -9,6 +9,8 @@ import {
 } from "@/components/storefront/store-pages";
 import { ProductGallery } from "@/components/storefront/product-gallery";
 import { Price } from "@/components/storefront/currency-switcher";
+import { BackButton } from "@/components/storefront/extras";
+import { FREE_SHIPPING_OVER } from "@/lib/shipping";
 import { getStoreCurrency, getStoreProduct, getStoreProducts } from "@/lib/api";
 import { categorySlug, productIdFromSlug } from "@/lib/slug";
 
@@ -68,6 +70,12 @@ export default async function ProductPage({
 
   const inStock =
     product.availability === undefined || product.availability === "in_stock";
+  // The three quick facts shown as tiles; everything else is under "Details"
+  const facts = [
+    ["Material", product.material],
+    ["Origin", product.origin],
+    ["Style", product.style],
+  ].filter(([, value]) => value);
   const specs = [
     ["Material", product.material],
     ["Origin", product.origin],
@@ -102,6 +110,9 @@ export default async function ProductPage({
             __html: JSON.stringify(structuredData).replace(/</g, "\\u003c"),
           }}
         />
+        <div className="store-back-bar">
+          <BackButton fallback="/collections" />
+        </div>
         <section className="store-product-layout">
           <ProductGallery images={product.gallery} productName={product.name} />
           <div className="store-info">
@@ -111,6 +122,14 @@ export default async function ProductPage({
                 {product.category}
               </Link>
             </div>
+            {(product.newArrival || (product.oldPrice && inStock)) && (
+              <div className="store-badges">
+                {product.oldPrice && inStock && <span>Sale</span>}
+                {product.newArrival && inStock && (
+                  <span className="store-badge-new">New</span>
+                )}
+              </div>
+            )}
             <h1>{product.name}</h1>
             <p>
               {product.oldPrice && (
@@ -120,9 +139,6 @@ export default async function ProductPage({
               )}{" "}
               <Price value={product.price} />
             </p>
-            {product.description && (
-              <p className="store-description">{product.description}</p>
-            )}
             <p className="store-stock">
               {product.availability === "sold_out"
                 ? "Sold out"
@@ -130,16 +146,46 @@ export default async function ProductPage({
                   ? "Currently unavailable"
                   : "In stock and ready to ship"}
             </p>
-            {specs.length > 0 && (
-              <div className="store-specs">
-                {specs.map(([label, value]) => (
+            {facts.length > 0 && (
+              <div className="store-facts">
+                {facts.map(([label, value]) => (
                   <div key={label}>
-                    {label} <span>{value}</span>
+                    <small>{label}</small>
+                    <strong>{value}</strong>
                   </div>
                 ))}
               </div>
             )}
             <ProductPurchase product={product} />
+            <div className="store-accordion">
+              {product.description && (
+                <details open>
+                  <summary>Description</summary>
+                  <p>{product.description}</p>
+                </details>
+              )}
+              {specs.length > 0 && (
+                <details>
+                  <summary>Details</summary>
+                  <dl>
+                    {specs.map(([label, value]) => (
+                      <div key={label}>
+                        <dt>{label}</dt>
+                        <dd>{value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </details>
+              )}
+              <details>
+                <summary>Shipping &amp; returns</summary>
+                <p>
+                  Free shipping on orders over{" "}
+                  <Price value={FREE_SHIPPING_OVER} />. Easy returns within 30
+                  days.
+                </p>
+              </details>
+            </div>
           </div>
         </section>
         {related.length > 0 && (
